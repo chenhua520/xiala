@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+    html, body {
+           height: 100%;
+           overflow: hidden;
+       }
+       * {
+           margin: 0;
+           padding: 0;
+           box-sizing: border-box;
+       }
+       ul {
+           list-style: none;
+       }
+       .wrapper {
+           position: relative;
+           height: 100%;
+           overflow: scroll;
+       }
+       .tab {
+           position: absolute;
+           top: 0;
+           left: 0;
+           right: 0;
+           height: 40px;
+           line-height: 40px;
+           text-align: center;
+           font-size: 14px;
+           color: #000;
+           border-bottom: 1px solid red;
+           background: #fff;
+           z-index: 10;
+       }
+ 
+       .list {
+           position: absolute;
+           top: 40px;
+           left: 0;
+           right: 0;
+           background: #fff;
+           z-index: 2
+       }
+ 
+       .item {
+           margin-bottom: 10px;
+           height: 80px;
+           line-height: 80px;
+           padding-left: 20px;
+           border-bottom: 1px solid #ededed;
+           background: #f4f4f4
+       }
+       .text {
+           position: absolute;
+           left: 0;
+           right: 0;
+           text-align: center;
+           height: 30px;
+           line-height: 30px;
+           color: rgba(0, 0, 0, .5);
+           z-index: 1
+       }
+ 
+       .top-text {
+           top: -30px
+       }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <p class="tab">选项卡</p>
+        <ul class="list">
+            <li class="top-text text">下拉刷新</li>
+        </ul>
+    </div>
+    <script>
+    const MORE = 'MORE';
+   const INIT = 'INIT';
+ 
+   let wrapper = document.querySelector('.wrapper');
+   let list = document.querySelector('.list');
+   let topItem = document.querySelector('.top-text');
+   let sTop; // 触发touch事件时的距离选项卡底部的距离
+   let mTop; // touchmove时距离选项卡底部的位置
+   let eTop; // 记录touchend时的位置
+   // let isRefresh = false;
+   let startOffsetTop = 40;// 距离顶部的距离，tab的高度
+   let wScrollTop; // wrapper 节点是否滚动
+   let maxTop = 100; // 最多下拉100px
+   let minTop = 20; // 最小下拉20px,小于20px时不处理
+   window.onload = function(){
+       // let bottomItem = document.querySelector('.bottom-text');
+       loadData(INIT, 10);
+       list.addEventListener('touchstart', function (e) {
+           sTop = e.touches[0].pageY - startOffsetTop;
+       });
+       list.addEventListener('touchmove', function (e) {
+           // 只有当列表处于顶部的时候下拉刷新才有用
+           wScrollTop = wrapper.scrollTop;
+           mTop = e.touches[0].pageY - startOffsetTop;
+           if(wScrollTop <= 0){
+               // 下拉过程中设置list的位置
+               let mOffsetTop = mTop - sTop + startOffsetTop + 'px';
+               if (mTop > sTop) {
+                   if (mTop - sTop < 30) {
+                       topItem.innerHTML = '下拉刷新';
+                   } else {
+                       topItem.innerHTML = '释放刷新';
+                   }
+                   if ((mTop - sTop) <= maxTop) {
+                       list.style.top = mOffsetTop;
+                   } else {
+                       list.style.top = maxTop + startOffsetTop + 'px'
+                   }
+               }
+           }
+           // 此处判断是否到底部会存在滚动到底部后第一次touch不会加载数据的情况，所以使用onscroll事件
+           // if(isToBottom()){
+           //     loadData(MORE, 3)
+           // }
+       });
+       list.addEventListener('touchend', function (e) {
+           eTop = list.offsetTop;
+           if (eTop >= (minTop + startOffsetTop)) {
+               loadData(MORE, 3);
+               topItem.innerHTML = '正在加载';
+               setTimeout(function () {
+                   resize()
+               }, 1000)
+           } else {
+               resize()
+           }
+       });
+       wrapper.onscroll = function(){
+           if(isToBottom()){
+               loadData(MORE, 3)
+           }
+       };
+   };
+   function loadData(str, n) {
+       let more = document.querySelector('.bottom-text');
+       setTimeout(function () {
+           for (let i = 0; i < n; i++) {
+               let node = document.createElement('li');
+               if(str === INIT){
+                   node.innerHTML = i;
+               }else if(str === MORE) {
+                   node.innerHTML = '刷新的数据' + i;
+               }
+               node.className = 'item';
+               list.insertBefore(node, more);
+           }
+       }, 2000)
+   }
+   function resize() {
+       let time = setInterval(function () {
+           if (list.offsetTop <= startOffsetTop) {
+               clearInterval(time);
+               topItem.innerHTML = '下拉加载';
+           } else {
+               list.style.top = list.offsetTop - 1 + 'px';
+               topItem.innerHTML = '加载完成';
+           }
+       }, 5)
+   }
+   // 判断是否滚动到底部
+   function isToBottom(){
+       // 这里在计算wrapper.scrollTop的时候存在一定问题
+       if(wrapper.scrollHeight - wrapper.scrollTop - document.body.clientHeight < 5){
+           console.log('底部');
+           return true
+       }
+   }
+    
+    </script>
+</body>
+</html>
